@@ -17,9 +17,6 @@ logo_path = os.path.join(BASE_DIR, "logo.png")
 
 col1, col2 = st.columns([1, 8])
 with col1:
-    st.write("Current working directory:", os.getcwd())
-    st.write("Files in current directory:", os.listdir())
-    st.write("Files in logo directory:", os.listdir(BASE_DIR))
     try:
         img = Image.open(logo_path)
         st.image(img, width=80)

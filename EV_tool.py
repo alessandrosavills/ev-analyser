@@ -5,11 +5,11 @@ from folium import LinearColormap
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 import numpy as np
-from scipy.spatial import cKDTree
+from scipy.spatial import cKDTree, distance_matrix
 
 st.set_page_config(layout="centered")
 
-# Layout: logo and title side by side
+# Layout: logo and title
 col1, col2 = st.columns([1, 8])
 with col1:
     st.image("logo.png", width=80)
@@ -34,18 +34,24 @@ def load_data():
     return chargers, cleaned_dft, headroom
 
 def process_sites(sites, chargers, cleaned_dft, headroom):
+    # Prepare DfT traffic points
     dft_xyz = latlon_to_xyz(cleaned_dft["latitude"].values, cleaned_dft["longitude"].values)
-    dft_tree = cKDTree(dft_xyz)
     sites_xyz = latlon_to_xyz(sites["latitude"].values, sites["longitude"].values)
 
-    # Traffic count within 1 km radius
-    radius_km = 1.0
-    indices_within_radius = dft_tree.query_ball_point(sites_xyz, r=radius_km)
-    traffic_counts = [
-        cleaned_dft.iloc[idx]["cars_and_taxis"].sum() if idx else 0
-        for idx in indices_within_radius
-    ]
-    sites["traffic_count"] = traffic_counts
+    # --- Weighted Traffic Analysis (improved) ---
+    distances = distance_matrix(sites_xyz, dft_xyz)  # shape: (n_sites, n_dft)
+    weights = 1 / (distances + 0.1)  # Avoid division by zero
+
+    # Optional: boost traffic weights by road category
+    category_weight = {
+        "Motorway": 1.5,
+        "A Road": 1.2,
+        "B Road": 1.0,
+        "Minor Road": 0.5
+    }
+    cleaned_dft["category_boost"] = cleaned_dft["road_category"].map(category_weight).fillna(1)
+    weighted_traffic = weights @ (cleaned_dft["cars_and_taxis"].values * cleaned_dft["category_boost"].values)
+    sites["traffic_count"] = weighted_traffic
 
     # Categorise traffic level
     bins = [0, 3503, 16210, 41627, 96626, 1_233_284]
@@ -58,14 +64,14 @@ def process_sites(sites, chargers, cleaned_dft, headroom):
         right=False
     )
 
-    # Nearby chargers
+    # --- Nearby EV chargers ---
     chargers = chargers.dropna(subset=["latitude", "longitude"])
     chargers_xyz = latlon_to_xyz(chargers["latitude"].values, chargers["longitude"].values)
     chargers_tree = cKDTree(chargers_xyz)
     nearby_indices = chargers_tree.query_ball_point(sites_xyz, r=1.0)
     sites["nearby_chargers"] = [len(idx_list) for idx_list in nearby_indices]
 
-    # Use score
+    # --- Use score ---
     use_map = {
         "residential": 95,
         "public": 60,
@@ -74,13 +80,13 @@ def process_sites(sites, chargers, cleaned_dft, headroom):
     }
     sites["use_score"] = sites["use"].str.lower().map(use_map).fillna(1)
 
-    # Grid headroom
+    # --- Grid headroom ---
     sub_xyz = latlon_to_xyz(headroom["latitude"].values, headroom["longitude"].values)
     sub_tree = cKDTree(sub_xyz)
     _, nearest_sub_indices = sub_tree.query(sites_xyz, k=1)
     sites["headroom_mva"] = headroom.iloc[nearest_sub_indices]["headroom_mva"].values
 
-    # Normalisation
+    # --- Normalisation ---
     sites["traffic_norm"] = (sites["traffic_count"] - sites["traffic_count"].min()) / (
         sites["traffic_count"].max() - sites["traffic_count"].min() + 1e-6)
     sites["grid_score"] = (sites["headroom_mva"] - sites["headroom_mva"].min()) / (
@@ -105,14 +111,11 @@ def calculate_scores(sites):
 
     penalty_per_charger = 0.05
     sites["composite_score"] = sites["total_score"] - penalty_per_charger * sites["nearby_chargers"]
-    # Set scores to 0 where headroom <= 0
     sites.loc[sites["headroom_mva"] <= 0, ["composite_score", "total_score"]] = 0
 
-    # Re-sort after adjusting scores
     sites = sites.sort_values(by="composite_score", ascending=False).reset_index(drop=True)
     sites["final_rank"] = sites.index + 1
     return sites
-
 
 def create_map(sites, chargers, substations, show_chargers=True, show_substations=True):
     map_center = [sites["latitude"].mean(), sites["longitude"].mean()]
@@ -213,7 +216,6 @@ display_df.rename(columns={
 }, inplace=True)
 
 display_df["Score"] = display_df["Score"].round(2)
-
 display_df["Headroom (MVA)"] = display_df["Headroom (MVA)"].round(0).astype(int)
 
 st.header("📊 Ranked Sites Table")
@@ -223,12 +225,10 @@ st.dataframe(display_df)
 st.header("🗺️ Sites Map with Rankings")
 
 st.write("Additional points to include in the map:")
-st.info("Based on the location, the following settings might take a few minutes to load")
+st.info("Depending on the location, loading the full map may take a moment.")
 show_chargers = st.checkbox("EV chargers", value=False)
 show_substations = st.checkbox("Substations", value=False)
 
 m = create_map(sites, chargers, headroom, show_chargers=show_chargers, show_substations=show_substations)
-
 st.caption("Map showing site rankings: green = best, red = worst")
 st_folium(m, width=800, height=600, returned_objects=[])
-

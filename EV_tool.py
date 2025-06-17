@@ -6,23 +6,13 @@ from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 import numpy as np
 from scipy.spatial import cKDTree
-import os
-from PIL import Image
 
 st.set_page_config(layout="centered")
 
-# --- Robust image loading with debug info ---
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-logo_path = os.path.join(BASE_DIR, "logo.png")
-
+# Layout: logo and title side by side
 col1, col2 = st.columns([1, 8])
 with col1:
-    try:
-        img = Image.open(logo_path)
-        st.image(img, width=80)
-    except Exception as e:
-        st.error(f"Error loading logo.png from {logo_path}: {e}")
-
+    st.image("logo.png", width=80)
 with col2:
     st.title("EV Charger Site Analyser")
 
@@ -48,6 +38,7 @@ def process_sites(sites, chargers, cleaned_dft, headroom):
     dft_tree = cKDTree(dft_xyz)
     sites_xyz = latlon_to_xyz(sites["latitude"].values, sites["longitude"].values)
 
+    # Traffic count within 1 km radius
     radius_km = 1.0
     indices_within_radius = dft_tree.query_ball_point(sites_xyz, r=radius_km)
     traffic_counts = [
@@ -56,6 +47,7 @@ def process_sites(sites, chargers, cleaned_dft, headroom):
     ]
     sites["traffic_count"] = traffic_counts
 
+    # Categorise traffic level
     bins = [0, 3503, 16210, 41627, 96626, 1_233_284]
     labels = ["Very Low", "Low", "Medium", "High", "Very High"]
     sites["traffic_level"] = pd.cut(
@@ -66,12 +58,14 @@ def process_sites(sites, chargers, cleaned_dft, headroom):
         right=False
     )
 
+    # Nearby chargers
     chargers = chargers.dropna(subset=["latitude", "longitude"])
     chargers_xyz = latlon_to_xyz(chargers["latitude"].values, chargers["longitude"].values)
     chargers_tree = cKDTree(chargers_xyz)
     nearby_indices = chargers_tree.query_ball_point(sites_xyz, r=1.0)
     sites["nearby_chargers"] = [len(idx_list) for idx_list in nearby_indices]
 
+    # Use score
     use_map = {
         "residential": 4,
         "public": 3,
@@ -80,11 +74,13 @@ def process_sites(sites, chargers, cleaned_dft, headroom):
     }
     sites["use_score"] = sites["use"].str.lower().map(use_map).fillna(1)
 
+    # Grid headroom
     sub_xyz = latlon_to_xyz(headroom["latitude"].values, headroom["longitude"].values)
     sub_tree = cKDTree(sub_xyz)
     _, nearest_sub_indices = sub_tree.query(sites_xyz, k=1)
     sites["headroom_mva"] = headroom.iloc[nearest_sub_indices]["headroom_mva"].values
 
+    # Normalisation
     sites["traffic_norm"] = (sites["traffic_count"] - sites["traffic_count"].min()) / (
         sites["traffic_count"].max() - sites["traffic_count"].min() + 1e-6)
     sites["grid_score"] = (sites["headroom_mva"] - sites["headroom_mva"].min()) / (
@@ -174,9 +170,10 @@ uploaded_file = st.file_uploader("Upload your ranked sites CSV", type=["csv"])
 sites = None
 
 if uploaded_file is not None:
-    from chargers import get_chargers
-    with st.spinner("Fetching latest charger data..."):
-        get_chargers()
+    # Optional: update chargers if you have a function to do that
+    # from chargers import get_chargers
+    # with st.spinner("Fetching latest charger data..."):
+    #     get_chargers()
 
     sites = pd.read_csv(uploaded_file)
     required_cols = {
@@ -228,3 +225,4 @@ display_df["Headroom (MVA)"] = display_df["Headroom (MVA)"].round(0).astype(int)
 
 st.header("📊 Ranked Sites Table")
 st.dataframe(display_df)
+c

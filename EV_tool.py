@@ -11,36 +11,28 @@ st.set_page_config(layout="centered")
 
 st.markdown("""
     <style>
-    /* Animated Savills dark blue gradient background */
+    /* Solid Savills dark blue background */
     .stApp {
-        background: linear-gradient(90deg, #002244, #003366, #004080, #0055a4, #003366);
-        background-size: 400% 400%;
-        animation: gradientBG 20s ease infinite;
+        background-color: #003366;
         min-height: 100vh;
+        color: white;  /* fallback text color */
     }
 
-    @keyframes gradientBG {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-
-    /* Keep main content area white for readability */
+    /* Main content area white for readability */
     .css-18e3th9 {
         background-color: white !important;
-        color: #000000 !important;
+        color: white !important;  /* text white inside white panel - may be hard to read */
     }
 
-    /* Optional: Ensure headers and text are dark */
-    h1, h2, h3, h4, h5, h6, p, span, div {
-        color: #000000 !important;
+    /* Override text colors inside main content to white */
+    .css-18e3th9 * {
+        color: white !important;
     }
-    </style>
+
+    /* If you want to keep UI readable inside the white panel,
+       better to use a dark background with white text, or white bg with dark text */
+</style>
 """, unsafe_allow_html=True)
-
-
-
-
 
 # Layout: logo and title side by side
 col1, col2 = st.columns([1, 8])

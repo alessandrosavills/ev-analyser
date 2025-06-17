@@ -34,6 +34,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+
 # Layout: logo and title side by side
 col1, col2 = st.columns([1, 8])
 with col1:

@@ -212,4 +212,12 @@ display_df.rename(columns={
     "site_name": "Site Name",
     "traffic_level": "Traffic Level",
     "headroom_mva": "Headroom (MVA)",
-    "use": "Site
+    "use": "Site Use",
+    "opening_hours": "Opening Hours",
+    "land_availability_score": "Land Availability Score"
+}, inplace=True)
+
+display_df["Headroom (MVA)"] = display_df["Headroom (MVA)"].round(0).astype(int)
+
+st.header("📊 Ranked Sites Table")
+st.dataframe(display_df)

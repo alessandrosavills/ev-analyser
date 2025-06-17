@@ -183,7 +183,7 @@ if uploaded_file is not None:
     st.write("Preview of your uploaded sites:")
     st.dataframe(sites.head())
 else:
-    st.info("Please upload a CSV with columns: site_name, latitude, longitude, use, opening_hours, land_accessibility.")
+    st.warning("Please upload a CSV with columns: site_name, latitude, longitude, use, opening_hours, land_accessibility.")
     st.stop()
 
 chargers, cleaned_dft, headroom = load_data()

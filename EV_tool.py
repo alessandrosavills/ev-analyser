@@ -192,12 +192,13 @@ sites = calculate_scores(sites)
 
 # --- Table Display ---
 display_df = sites[[
-    "site_name", "traffic_level", "nearby_chargers", "headroom_mva", "use",
+    "site_name", "composite_score", "traffic_level", "nearby_chargers", "headroom_mva", "use",
     "opening_hours", "land_accessibility"
 ]].copy()
 
 display_df.rename(columns={
     "site_name": "Site Name",
+    "composite_score": "Score",
     "traffic_level": "Traffic Level",
     "nearby_chargers": "Nearby Chargers",
     "headroom_mva": "Headroom (MVA)",

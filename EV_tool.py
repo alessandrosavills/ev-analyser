@@ -27,7 +27,6 @@ def latlon_to_xyz(lat, lon):
     return np.vstack((x, y, z)).T
 
 def load_data():
-    # Read cleaned_dft from ZIP archive, assuming it contains a single CSV
     cleaned_dft = pd.read_csv("cleaned_dft.zip", compression='zip')
     chargers = pd.read_csv("chargers.csv")
     headroom = pd.read_csv("headroom.csv")
@@ -152,10 +151,11 @@ def create_map(sites, chargers, substations, show_chargers=True, show_substation
     if show_substations:
         substation_cluster = MarkerCluster(name="Substations").add_to(m)
         for _, s in substations.iterrows():
+            headroom_val = s["headroom_mva"] if "headroom_mva" in s and pd.notna(s["headroom_mva"]) else 0
             popup_html = f"""
                 <b>Substation</b><br>
                 Name: {s.get('name', 'N/A')}<br>
-                Headroom (MVA): {int(round(s.get('headroom_mva', 0)))}
+                Headroom (MVA): {int(round(headroom_val))}
             """
             folium.Marker(
                 location=[s["latitude"], s["longitude"]],
@@ -221,5 +221,3 @@ display_df["Headroom (MVA)"] = display_df["Headroom (MVA)"].round(0).astype(int)
 
 st.header("📊 Ranked Sites Table")
 st.dataframe(display_df)
-
-

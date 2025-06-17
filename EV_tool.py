@@ -6,12 +6,15 @@ from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 import numpy as np
 from scipy.spatial import cKDTree
+import os
 
 st.set_page_config(layout="centered")
 
 # Layout
 col1, col2 = st.columns([1, 8])
 with col1:
+    st.write("Current working directory:", os.getcwd())
+    st.write("Files in current directory:", os.listdir())
     st.image("logo.png", width=80)
 with col2:
     st.title("EV Charger Site Analyser")

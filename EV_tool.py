@@ -131,5 +131,6 @@ elif page == "Map":
         show_substations=show_substations
     )
 
+
     st.caption("Green = best sites, Red = lower ranked")
     st_folium(m, width=1000, height=600, returned_objects=[])

@@ -49,7 +49,7 @@ def process_sites(sites, chargers, cleaned_dft, headroom):
         "B Road": 1.0,
         "Minor Road": 0.5
     }
-    cleaned_dft["category_boost"] = cleaned_dft["road_category"].map(category_weight).fillna(1)
+    cleaned_dft["category_boost"] = cleaned_dft["road_type"].map(category_weight).fillna(1)
     weighted_traffic = weights @ (cleaned_dft["cars_and_taxis"].values * cleaned_dft["category_boost"].values)
     sites["traffic_count"] = weighted_traffic
 

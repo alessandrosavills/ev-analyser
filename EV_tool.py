@@ -9,6 +9,26 @@ from scipy.spatial import cKDTree
 
 st.set_page_config(layout="centered")
 
+st.markdown("""
+    <style>
+    body {
+        background: linear-gradient(135deg, #e0f7fa, #80deea, #26c6da, #00acc1, #00838f);
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
+    }
+
+    @keyframes gradientBG {
+        0% {background-position: 0% 50%;}
+        50% {background-position: 100% 50%;}
+        100% {background-position: 0% 50%;}
+    }
+
+    .stApp {
+        background: transparent;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # Layout: logo and title side by side
 col1, col2 = st.columns([1, 8])
 with col1:

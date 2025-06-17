@@ -207,6 +207,8 @@ display_df.rename(columns={
     "land_accessibility": "Land Accessibility"
 }, inplace=True)
 
+display_df["Score"] = display_df["Score"].round(2)
+
 display_df["Headroom (MVA)"] = display_df["Headroom (MVA)"].round(0).astype(int)
 
 st.header("📊 Ranked Sites Table")

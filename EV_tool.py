@@ -105,9 +105,14 @@ def calculate_scores(sites):
 
     penalty_per_charger = 0.05
     sites["composite_score"] = sites["total_score"] - penalty_per_charger * sites["nearby_chargers"]
+    # Set scores to 0 where headroom <= 0
+    sites.loc[sites["headroom_mva"] <= 0, ["composite_score", "total_score"]] = 0
+
+    # Re-sort after adjusting scores
     sites = sites.sort_values(by="composite_score", ascending=False).reset_index(drop=True)
     sites["final_rank"] = sites.index + 1
     return sites
+
 
 def create_map(sites, chargers, substations, show_chargers=True, show_substations=True):
     map_center = [sites["latitude"].mean(), sites["longitude"].mean()]

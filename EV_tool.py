@@ -217,7 +217,8 @@ st.dataframe(display_df)
 # --- Map Display ---
 st.header("🗺️ Sites Map with Rankings")
 
-st.caption("Based on the location, the following settings might take a few minutes to load")
+st.write("Additional points to include in the map:")
+st.info("Based on the location, the following settings might take a few minutes to load")
 show_chargers = st.checkbox("EV chargers", value=False)
 show_substations = st.checkbox("Substations", value=False)
 

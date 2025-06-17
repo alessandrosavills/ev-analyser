@@ -12,7 +12,7 @@ st.set_page_config(layout="centered")
 # Layout
 col1, col2 = st.columns([1, 8])
 with col1:
-    st.image(r"C:\Users\alessandro.stringari\OneDrive - Savills plc\Training\Python projects\AI challenge\logo.png", width=80)
+    st.image("logo.png", width=80)
 with col2:
     st.title("EV Charger Site Analyser")
 
@@ -27,11 +27,11 @@ def latlon_to_xyz(lat, lon):
     return np.vstack((x, y, z)).T
 
 def load_data():
-    cleaned_dft = pd.read_csv(r"C:\Users\alessandro.stringari\OneDrive - Savills plc\Training\Python projects\AI challenge\cleaned_dft.csv")
+    cleaned_dft = pd.read_csv("cleaned_dft.csv.gz", compression='gzip')
     chargers = pd.read_csv(
-        r"C:\Users\alessandro.stringari\OneDrive - Savills plc\Training\Python projects\AI challenge\chargers.csv")
+        r"chargers.csv")
     headroom = pd.read_csv(
-        r"C:\Users\alessandro.stringari\OneDrive - Savills plc\Training\Python projects\AI challenge\headroom.csv")
+        r"headroom.csv")
     cleaned_dft = cleaned_dft.sort_values("year").drop_duplicates(subset=["count_point_id"], keep="last")
     return chargers, cleaned_dft, headroom
 

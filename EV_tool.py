@@ -67,10 +67,10 @@ def process_sites(sites, chargers, cleaned_dft, headroom):
 
     # Use score
     use_map = {
-        "residential": 4,
-        "public": 3,
-        "retail": 2,
-        "office": 1
+        "residential": 95,
+        "public": 60,
+        "retail": 75,
+        "office": 85
     }
     sites["use_score"] = sites["use"].str.lower().map(use_map).fillna(1)
 
@@ -96,11 +96,11 @@ def calculate_scores(sites):
     w_traffic = 0.3
 
     sites["total_score"] = (
-        (sites["opening_hours"] / 24) * w_hours +
+        (sites["opening_hours"] / 24) * 100 * w_hours +
         sites["land_accessibility"] * w_land +
-        sites["grid_score"] * w_grid +
+        sites["grid_score"] * 100 * w_grid +
         sites["use_score"] * w_use +
-        sites["traffic_norm"] * w_traffic
+        sites["traffic_norm"] * 100 * w_traffic
     )
 
     penalty_per_charger = 0.05

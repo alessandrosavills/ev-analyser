@@ -7,15 +7,25 @@ from streamlit_folium import st_folium
 import numpy as np
 from scipy.spatial import cKDTree
 import os
+from PIL import Image
 
 st.set_page_config(layout="centered")
 
-# Layout
+# --- Robust image loading with debug info ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+logo_path = os.path.join(BASE_DIR, "logo.png")
+
 col1, col2 = st.columns([1, 8])
 with col1:
     st.write("Current working directory:", os.getcwd())
     st.write("Files in current directory:", os.listdir())
-    st.image("logo.png", width=80)
+    st.write("Files in logo directory:", os.listdir(BASE_DIR))
+    try:
+        img = Image.open(logo_path)
+        st.image(img, width=80)
+    except Exception as e:
+        st.error(f"Error loading logo.png from {logo_path}: {e}")
+
 with col2:
     st.title("EV Charger Site Analyser")
 
@@ -31,10 +41,8 @@ def latlon_to_xyz(lat, lon):
 
 def load_data():
     cleaned_dft = pd.read_csv("cleaned_dft.csv.gz", compression='gzip')
-    chargers = pd.read_csv(
-        r"chargers.csv")
-    headroom = pd.read_csv(
-        r"headroom.csv")
+    chargers = pd.read_csv("chargers.csv")
+    headroom = pd.read_csv("headroom.csv")
     cleaned_dft = cleaned_dft.sort_values("year").drop_duplicates(subset=["count_point_id"], keep="last")
     return chargers, cleaned_dft, headroom
 
@@ -43,7 +51,6 @@ def process_sites(sites, chargers, cleaned_dft, headroom):
     dft_tree = cKDTree(dft_xyz)
     sites_xyz = latlon_to_xyz(sites["latitude"].values, sites["longitude"].values)
 
-    # Traffic count within 1 km radius
     radius_km = 1.0
     indices_within_radius = dft_tree.query_ball_point(sites_xyz, r=radius_km)
     traffic_counts = [
@@ -52,7 +59,6 @@ def process_sites(sites, chargers, cleaned_dft, headroom):
     ]
     sites["traffic_count"] = traffic_counts
 
-    # Categorise traffic level
     bins = [0, 3503, 16210, 41627, 96626, 1_233_284]
     labels = ["Very Low", "Low", "Medium", "High", "Very High"]
     sites["traffic_level"] = pd.cut(
@@ -60,17 +66,15 @@ def process_sites(sites, chargers, cleaned_dft, headroom):
         bins=bins,
         labels=labels,
         include_lowest=True,
-        right=False  # to keep intervals left-closed, right-open (optional)
+        right=False
     )
 
-    # Nearby chargers
     chargers = chargers.dropna(subset=["latitude", "longitude"])
     chargers_xyz = latlon_to_xyz(chargers["latitude"].values, chargers["longitude"].values)
     chargers_tree = cKDTree(chargers_xyz)
     nearby_indices = chargers_tree.query_ball_point(sites_xyz, r=1.0)
     sites["nearby_chargers"] = [len(idx_list) for idx_list in nearby_indices]
 
-    # Use score
     use_map = {
         "residential": 4,
         "public": 3,
@@ -79,13 +83,11 @@ def process_sites(sites, chargers, cleaned_dft, headroom):
     }
     sites["use_score"] = sites["use"].str.lower().map(use_map).fillna(1)
 
-    # Grid headroom
     sub_xyz = latlon_to_xyz(headroom["latitude"].values, headroom["longitude"].values)
     sub_tree = cKDTree(sub_xyz)
     _, nearest_sub_indices = sub_tree.query(sites_xyz, k=1)
     sites["headroom_mva"] = headroom.iloc[nearest_sub_indices]["headroom_mva"].values
 
-    # Normalisation
     sites["traffic_norm"] = (sites["traffic_count"] - sites["traffic_count"].min()) / (
         sites["traffic_count"].max() - sites["traffic_count"].min() + 1e-6)
     sites["grid_score"] = (sites["headroom_mva"] - sites["headroom_mva"].min()) / (
@@ -201,7 +203,7 @@ sites = calculate_scores(sites)
 # --- Map Display ---
 st.header("🗺️ Sites Map with Rankings")
 
-st.caption("Based on the location, the following settingS might take a few minutes to load")
+st.caption("Based on the location, the following settings might take a few minutes to load")
 show_chargers = st.checkbox("EV chargers", value=False)
 show_substations = st.checkbox("Substations", value=False)
 
@@ -209,8 +211,6 @@ m = create_map(sites, chargers, headroom, show_chargers=show_chargers, show_subs
 
 st.caption("Map showing site rankings: green = best, red = worst")
 st_folium(m, width=800, height=600, returned_objects=[])
-
-
 
 # --- Table Display ---
 display_df = sites[[

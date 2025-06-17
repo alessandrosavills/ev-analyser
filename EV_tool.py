@@ -11,24 +11,27 @@ st.set_page_config(layout="centered")
 
 st.markdown("""
     <style>
-    /* Gradient animated background */
+    /* Animated blue gradient background on the root app container */
     .stApp {
         background: linear-gradient(135deg, #e0f7fa, #80deea, #26c6da, #00acc1, #00838f);
         background-size: 400% 400%;
-        animation: gradientBG 15s ease infinite;
+        animation: gradientBG 20s ease infinite;
         min-height: 100vh;
     }
+
     @keyframes gradientBG {
-        0% {background-position: 0% 50%;}
-        50% {background-position: 100% 50%;}
-        100% {background-position: 0% 50%;}
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
-    /* Make main container transparent so background shows */
+
+    /* Transparent main container to show background */
     .css-18e3th9 {
-        background: transparent;
+        background: transparent !important;
     }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 # Layout: logo and title side by side

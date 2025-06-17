@@ -97,7 +97,7 @@ def calculate_scores(sites):
 
     sites["total_score"] = (
         (sites["opening_hours"] / 24) * w_hours +
-        sites["land_availability_score"] * w_land +
+        sites["land_accessibility"] * w_land +
         sites["grid_score"] * w_grid +
         sites["use_score"] * w_use +
         sites["traffic_norm"] * w_traffic
@@ -125,7 +125,7 @@ def create_map(sites, chargers, substations, show_chargers=True, show_substation
             Headroom (MVA): {int(round(row["headroom_mva"]))}<br>
             Use: {row["use"]}<br>
             Opening Hours: {row["opening_hours"]}<br>
-            Land Availability Score: {row["land_availability_score"]}
+            Land Accessibility: {row["land_accessibility"]}
         """, max_width=300)
 
         color = colormap(row["final_rank"])
@@ -174,7 +174,7 @@ if uploaded_file is not None:
     sites = pd.read_csv(uploaded_file)
     required_cols = {
         "site_name", "latitude", "longitude", "use",
-        "opening_hours", "land_availability_score"
+        "opening_hours", "land_accessibility"
     }
     if not required_cols.issubset(sites.columns):
         st.error(f"❌ Uploaded CSV is missing required columns: {required_cols - set(sites.columns)}")
@@ -183,7 +183,7 @@ if uploaded_file is not None:
     st.write("Preview of your uploaded sites:")
     st.dataframe(sites.head())
 else:
-    st.info("Please upload a CSV with columns: site_name, latitude, longitude, use, opening_hours, land_availability_score.")
+    st.info("Please upload a CSV with columns: site_name, latitude, longitude, use, opening_hours, land_accessibility.")
     st.stop()
 
 chargers, cleaned_dft, headroom = load_data()
@@ -205,7 +205,7 @@ st_folium(m, width=800, height=600, returned_objects=[])
 # --- Table Display ---
 display_df = sites[[
     "site_name", "traffic_level", "traffic_count", "headroom_mva", "use",
-    "opening_hours", "land_availability_score"
+    "opening_hours", "land_accessibility"
 ]].copy()
 
 display_df.rename(columns={
@@ -214,7 +214,7 @@ display_df.rename(columns={
     "headroom_mva": "Headroom (MVA)",
     "use": "Site Use",
     "opening_hours": "Opening Hours",
-    "land_availability_score": "Land Availability Score"
+    "land_accessibility": "Land Accessibility"
 }, inplace=True)
 
 display_df["Headroom (MVA)"] = display_df["Headroom (MVA)"].round(0).astype(int)

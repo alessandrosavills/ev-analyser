@@ -121,7 +121,7 @@ def create_map(sites, chargers, substations, show_chargers=True, show_substation
         popup = folium.Popup(f"""
             <b>{row["site_name"]}</b><br>
             Traffic Level: {row["traffic_level"]}<br>
-            Traffic Count: {int(row["traffic_count"])}<br>
+            Nearby EV Chargers: {row["nearby_chargers"]}
             Headroom (MVA): {int(round(row["headroom_mva"]))}<br>
             Use: {row["use"]}<br>
             Opening Hours: {row["opening_hours"]}<br>
@@ -190,6 +190,27 @@ chargers, cleaned_dft, headroom = load_data()
 sites = process_sites(sites, chargers, cleaned_dft, headroom)
 sites = calculate_scores(sites)
 
+# --- Table Display ---
+display_df = sites[[
+    "site_name", "traffic_level", "nearby_chargers", "headroom_mva", "use",
+    "opening_hours", "land_accessibility"
+]].copy()
+
+display_df.rename(columns={
+    "site_name": "Site Name",
+    "traffic_level": "Traffic Level",
+    "nearby_chargers": "Nearby Chargers",
+    "headroom_mva": "Headroom (MVA)",
+    "use": "Site Use",
+    "opening_hours": "Opening Hours",
+    "land_accessibility": "Land Accessibility"
+}, inplace=True)
+
+display_df["Headroom (MVA)"] = display_df["Headroom (MVA)"].round(0).astype(int)
+
+st.header("📊 Ranked Sites Table")
+st.dataframe(display_df)
+
 # --- Map Display ---
 st.header("🗺️ Sites Map with Rankings")
 
@@ -202,22 +223,3 @@ m = create_map(sites, chargers, headroom, show_chargers=show_chargers, show_subs
 st.caption("Map showing site rankings: green = best, red = worst")
 st_folium(m, width=800, height=600, returned_objects=[])
 
-# --- Table Display ---
-display_df = sites[[
-    "site_name", "traffic_level", "traffic_count", "headroom_mva", "use",
-    "opening_hours", "land_accessibility"
-]].copy()
-
-display_df.rename(columns={
-    "site_name": "Site Name",
-    "traffic_level": "Traffic Level",
-    "headroom_mva": "Headroom (MVA)",
-    "use": "Site Use",
-    "opening_hours": "Opening Hours",
-    "land_accessibility": "Land Accessibility"
-}, inplace=True)
-
-display_df["Headroom (MVA)"] = display_df["Headroom (MVA)"].round(0).astype(int)
-
-st.header("📊 Ranked Sites Table")
-st.dataframe(display_df)

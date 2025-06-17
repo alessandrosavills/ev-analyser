@@ -13,7 +13,7 @@ st.markdown("""
     <style>
     /* Animated blue gradient background on the root app container */
     .stApp {
-        background: linear-gradient(135deg, #e0f7fa, #80deea, #26c6da, #00acc1, #00838f);
+        background: linear-gradient(90deg, #e0f7fa, #80deea, #26c6da, #00acc1, #00838f);
         background-size: 400% 400%;
         animation: gradientBG 20s ease infinite;
         min-height: 100vh;

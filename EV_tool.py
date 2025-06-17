@@ -11,9 +11,9 @@ st.set_page_config(layout="centered")
 
 st.markdown("""
     <style>
-    /* Animated darker blue gradient background */
+    /* Animated Savills dark blue gradient background */
     .stApp {
-        background: linear-gradient(90deg, #004d66, #006680, #008299, #0099b3, #00aacc);
+        background: linear-gradient(90deg, #002244, #003366, #004080, #0055a4, #003366);
         background-size: 400% 400%;
         animation: gradientBG 20s ease infinite;
         min-height: 100vh;
@@ -25,12 +25,19 @@ st.markdown("""
         100% { background-position: 0% 50%; }
     }
 
-    /* Remove this to keep default content background */
-    /* .css-18e3th9 {
-        background: transparent !important;
-    } */
+    /* Keep main content area white for readability */
+    .css-18e3th9 {
+        background-color: white !important;
+        color: #000000 !important;
+    }
+
+    /* Optional: Ensure headers and text are dark */
+    h1, h2, h3, h4, h5, h6, p, span, div {
+        color: #000000 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 

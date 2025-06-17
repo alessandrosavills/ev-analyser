@@ -9,32 +9,6 @@ from scipy.spatial import cKDTree
 
 st.set_page_config(layout="centered")
 
-st.markdown("""
-    <style>
-    /* Solid Savills dark blue background */
-    .stApp {
-        background-color: #003366;
-        min-height: 100vh;
-        color: white;  /* fallback text color */
-    }
-
-    /* Main content area white for readability */
-    .css-18e3th9 {
-        background-color: white !important;
-        color: white !important;  /* text white inside white panel - may be hard to read */
-    }
-
-    /* Override text colors inside main content to white */
-    .css-18e3th9 * {
-        color: white !important;
-    }
-
-    /* If you want to keep UI readable inside the white panel,
-       better to use a dark background with white text, or white bg with dark text */
-</style>
-""", unsafe_allow_html=True)
-
-
 # Layout: logo and title side by side
 col1, col2 = st.columns([1, 8])
 with col1:

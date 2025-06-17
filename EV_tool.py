@@ -27,7 +27,7 @@ def latlon_to_xyz(lat, lon):
     return np.vstack((x, y, z)).T
 
 def load_data():
-    cleaned_dft = pd.read_csv("cleaned_dft.csv.gz", compression='gzip')
+    cleaned_dft = pd.read_csv("cleaned_dft.zip.gz", compression='gzip')
     chargers = pd.read_csv("chargers.csv")
     headroom = pd.read_csv("headroom.csv")
     cleaned_dft = cleaned_dft.sort_values("year").drop_duplicates(subset=["count_point_id"], keep="last")

@@ -235,11 +235,10 @@ sites["final_rank"] = sites.index + 1
 
 # Prepare table for display
 display_cols = [
-    "final_rank", "site_name", "latitude", "longitude", "use",
-    "opening_hours", "land_accessibility", "traffic_level",
-    "nearby_chargers", "headroom_mva", "composite_score"
+    "final_rank", "site_name", "composite_score", "traffic_level", "nearby_chargers", "headroom_mva", "use",
+    "opening_hours", "land_accessibility"
 ]
-st.markdown("### Ranked Sites Table")
+st.markdown("Ranked Sites")
 st.dataframe(sites[display_cols].style.format({
     "final_rank": "{:.0f}",
     "opening_hours": "{:.1f}",

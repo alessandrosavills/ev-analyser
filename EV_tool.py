@@ -170,7 +170,7 @@ chargers, cleaned_dft, headroom = load_data()
 
 # --- Sidebar Controls ---
 
-st.markdown("### Configuration Settings")
+st.markdown("# Configuration Settings")
 
 with st.expander("Use Class Suitability Configuration", expanded=False):
     unique_uses = sorted(sites["use"].dropna().str.lower().unique())

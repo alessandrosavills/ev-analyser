@@ -233,14 +233,13 @@ sites.loc[sites["headroom_mva"] <= 0, ["composite_score", "total_score"]] = 0
 sites = sites.sort_values(by="composite_score", ascending=False).reset_index(drop=True)
 sites["final_rank"] = sites.index + 1
 
-# Prepare table for display
-display_cols = sites[[
-    "final_rank", "site_name", "composite_score", "traffic_level", "nearby_chargers", "headroom_mva", "use",
+# --- Table Display ---
+display_df = sites[[
+    "site_name", "composite_score", "traffic_level", "nearby_chargers", "headroom_mva", "use",
     "opening_hours", "land_accessibility"
 ]].copy()
 
-display_cols.rename(columns={
-    "final_rank": "Rank",
+display_df.rename(columns={
     "site_name": "Site Name",
     "composite_score": "Score",
     "traffic_level": "Traffic Level",
@@ -251,11 +250,13 @@ display_cols.rename(columns={
     "land_accessibility": "Land Accessibility"
 }, inplace=True)
 
-display_cols["Score"] = display_cols["Score"].round(2)
-display_cols["Headroom (MVA)"] = display_cols["Headroom (MVA)"].round(0).astype(int)
+display_df["Score"] = display_df["Score"].round(2)
+display_df["Headroom (MVA)"] = display_df["Headroom (MVA)"].round(0).astype(int)
+
+st.header("Ranked Sites Table")
+st.dataframe(display_df)
 
 # --- Map Display ---
-
 st.write("Additional points to include in the map:")
 st.info("Depending on the location, loading the full map may take a moment.")
 show_chargers = st.checkbox("EV chargers", value=False)

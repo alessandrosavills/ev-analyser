@@ -143,11 +143,11 @@ def create_map(sites, chargers, substations, show_chargers=True, show_substation
 
 # --- Sidebar Controls ---
 with st.expander("Weight Configuration (Advanced)", expanded=False):
-    w_hours = st.slider("Opening Hours Weight", 0.0, 1.0, 0.2, 0.05)
-    w_land = st.slider("Land Accessibility Weight", 0.0, 1.0, 0.2, 0.05)
-    w_grid = st.slider("Grid Headroom Weight", 0.0, 1.0, 0.2, 0.05)
-    w_use = st.slider("Use Suitability Weight", 0.0, 1.0, 0.1, 0.05)
-    w_traffic = st.slider("Traffic Flow Weight", 0.0, 1.0, 0.3, 0.05)
+    w_hours = st.slider("Opening Hours Weight", 0, 1, 0.2, 0.05)
+    w_land = st.slider("Land Accessibility Weight", 0, 1, 0.2, 0.05)
+    w_grid = st.slider("Grid Headroom Weight", 0, 1, 0.2, 0.05)
+    w_use = st.slider("Use Suitability Weight", 0, 1, 0.1, 0.05)
+    w_traffic = st.slider("Traffic Flow Weight", 0, 1, 0.3, 0.05)
 
     penalty_per_charger = st.slider("Penalty per Nearby Charger", 0.0, 0.2, 0.05, 0.01)
 

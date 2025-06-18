@@ -251,8 +251,8 @@ st.dataframe(sites[display_cols].style.format({
 
 # --- Map Display ---
 
-show_chargers = st.checkbox("Show EV Chargers", value=True)
-show_substations = st.checkbox("Show Substations", value=True)
+show_chargers = st.checkbox("Show EV Chargers", value=False)
+show_substations = st.checkbox("Show Substations", value=False)
 
 ev_map = create_map(sites, chargers, headroom, show_chargers=show_chargers, show_substations=show_substations)
 st_folium(ev_map, width=1000, height=700)

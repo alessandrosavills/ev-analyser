@@ -176,7 +176,7 @@ with st.expander("Use Class Suitability Configuration", expanded=False):
     unique_uses = sorted(sites["use"].dropna().str.lower().unique())
     use_map = {}
 
-    cols = st.columns(3)
+    cols = st.columns(2)
     for i, use_type in enumerate(unique_uses):
         default = 75 if "retail" in use_type else 85 if "office" in use_type else 95 if "residential" in use_type else 60
         col = cols[i % 2]

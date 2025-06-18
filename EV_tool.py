@@ -142,7 +142,7 @@ def create_map(sites, chargers, substations, show_chargers=True, show_substation
     return m
 
 # --- Sidebar Controls ---
-with st.sidebar.expander("Weight Configuration (Advanced)", expanded=False):
+with st.expander("Weight Configuration (Advanced)", expanded=False):
     w_hours = st.slider("Opening Hours Weight", 0.0, 1.0, 0.2, 0.05)
     w_land = st.slider("Land Accessibility Weight", 0.0, 1.0, 0.2, 0.05)
     w_grid = st.slider("Grid Headroom Weight", 0.0, 1.0, 0.2, 0.05)

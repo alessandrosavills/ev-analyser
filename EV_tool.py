@@ -215,11 +215,11 @@ display_df.rename(columns={
 display_df["Score"] = display_df["Score"].round(2)
 display_df["Headroom (MVA)"] = display_df["Headroom (MVA)"].round(0).astype(int)
 
-st.header("\ud83d\udcca Ranked Sites Table")
+st.header("Ranked Sites Table")
 st.dataframe(display_df)
 
 # --- Map Display ---
-st.header("\ud83d\udfef\ufe0f Sites Map with Rankings")
+st.header("Sites Map with Rankings")
 
 st.write("Additional points to include in the map:")
 st.info("Depending on the location, loading the full map may take a moment.")

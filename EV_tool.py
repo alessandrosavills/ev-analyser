@@ -251,8 +251,11 @@ st.dataframe(sites[display_cols].style.format({
 
 # --- Map Display ---
 
-show_chargers = st.checkbox("Show EV Chargers", value=False)
-show_substations = st.checkbox("Show Substations", value=False)
+st.write("Additional points to include in the map:")
+st.info("Depending on the location, loading the full map may take a moment.")
+show_chargers = st.checkbox("EV chargers", value=False)
+show_substations = st.checkbox("Substations", value=False)
 
 ev_map = create_map(sites, chargers, headroom, show_chargers=show_chargers, show_substations=show_substations)
+st.caption("Map showing site rankings: green = best, red = worst")
 st_folium(ev_map, width=1000, height=700)

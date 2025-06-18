@@ -53,16 +53,22 @@ def process_sites(sites, chargers, cleaned_dft, headroom):
     weighted_traffic = weights @ (cleaned_dft["cars_and_taxis"].values * cleaned_dft["category_boost"].values)
     sites["traffic_count"] = weighted_traffic
 
-    # Categorise traffic level
-    bins = [0, 3503, 16210, 41627, 96626, 1_233_284]
+    # Categorise traffic level based on relative distribution among the uploaded sites
     labels = ["Very Low", "Low", "Medium", "High", "Very High"]
-    sites["traffic_level"] = pd.cut(
-        sites["traffic_count"],
-        bins=bins,
-        labels=labels,
-        include_lowest=True,
-        right=False
-    )
+
+    try:
+        sites["traffic_level"] = pd.qcut(
+            sites["traffic_count"],
+            q=5,
+            labels=labels
+        )
+    except ValueError:
+        # In case there are not enough unique values for 5 bins
+        sites["traffic_level"] = pd.cut(
+            sites["traffic_count"],
+            bins=5,
+            labels=labels
+        )
 
     # --- Nearby EV chargers ---
     chargers = chargers.dropna(subset=["latitude", "longitude"])

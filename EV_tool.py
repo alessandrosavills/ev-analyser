@@ -251,15 +251,8 @@ display_cols.rename(columns={
     "land_accessibility": "Land Accessibility"
 }, inplace=True)
 
-st.markdown("Ranked Sites")
-st.dataframe(sites[display_cols].style.format({
-    "final_rank": "{:.0f}",
-    "opening_hours": "{:.1f}",
-    "land_accessibility": "{:.2f}",
-    "nearby_chargers": "{:.0f}",
-    "headroom_mva": "{:.1f}",
-    "composite_score": "{:.2f}"
-}))
+display_cols["Score"] = display_cols["Score"].round(2)
+display_cols["Headroom (MVA)"] = display_cols["Headroom (MVA)"].round(0).astype(int)
 
 # --- Map Display ---
 

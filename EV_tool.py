@@ -152,18 +152,20 @@ with st.expander("Weight Configuration (Advanced)", expanded=False):
     total_weight = w_hours + w_land + w_grid + w_use + w_traffic
     st.markdown(f"**Total Weight: {total_weight:.2f}**")
 
-    with st.expander("Use Suitability Scores", expanded=False):
-        unique_uses = sorted(sites["use"].dropna().str.lower().unique())
-        use_map = {}
-        for use_type in unique_uses:
-            default = 75 if "retail" in use_type else 85 if "office" in use_type else 95 if "residential" in use_type else 60
-            use_map[use_type] = st.slider(f"{use_type.title()}", 0, 100, default, 5)
+
+
     penalty_choice = st.selectbox(
         "Penalty per Nearby Charger",
         options=["None", "Low", "Medium", "High"],
         index=2  # Default to Medium
     )
 
+with st.expander("Use Suitability Scores", expanded=False):
+    unique_uses = sorted(sites["use"].dropna().str.lower().unique())
+    use_map = {}
+    for use_type in unique_uses:
+        default = 75 if "retail" in use_type else 85 if "office" in use_type else 95 if "residential" in use_type else 60
+        use_map[use_type] = st.slider(f"{use_type.title()}", 0, 100, default, 5)
     # Map choices to numeric values
     penalty_map = {
         "None": 0.0,

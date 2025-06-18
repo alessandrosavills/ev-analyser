@@ -121,7 +121,7 @@ def create_map(sites, chargers, substations, show_chargers=True, show_substation
         ).add_to(m)
 
     if show_chargers:
-        charger_cluster = MarkerCluster(name="EV Chargers").add_to(m)
+        charger_cluster = MarkerCluster(name="title").add_to(m)
         for _, c in chargers.iterrows():
             folium.Marker(
                 location=[c["latitude"], c["longitude"]],
@@ -130,12 +130,12 @@ def create_map(sites, chargers, substations, show_chargers=True, show_substation
             ).add_to(charger_cluster)
 
     if show_substations:
-        substation_cluster = MarkerCluster(name="Substations").add_to(m)
+        substation_cluster = MarkerCluster(name="substation_name").add_to(m)
         for _, s in substations.iterrows():
             headroom_val = s["headroom_mva"] if "headroom_mva" in s and pd.notna(s["headroom_mva"]) else 0
             popup_html = f"""
                 <b>Substation</b><br>
-                Name: {s.get('substation_name', 'N/A')}<br>
+                Name: {s.get('name', 'N/A')}<br>
                 Headroom (MVA): {int(round(headroom_val))}
             """
             folium.Marker(

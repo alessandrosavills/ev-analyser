@@ -7,7 +7,7 @@ from streamlit_folium import st_folium
 import numpy as np
 from scipy.spatial import cKDTree, distance_matrix
 
-st.set_page_config(layout="wide")
+st.set_page_config(layout="centered")
 
 # Layout: logo and title
 col1, col2 = st.columns([1, 8])

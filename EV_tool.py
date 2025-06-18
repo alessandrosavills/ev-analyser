@@ -135,7 +135,7 @@ def create_map(sites, chargers, substations, show_chargers=True, show_substation
             headroom_val = s["headroom_mva"] if "headroom_mva" in s and pd.notna(s["headroom_mva"]) else 0
             popup_html = f"""
                 <b>Substation</b><br>
-                Name: {s.get('name', 'N/A')}<br>
+                Name: {s.get('substation_name', 'N/A')}<br>
                 Headroom (MVA): {int(round(headroom_val))}
             """
             folium.Marker(

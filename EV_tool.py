@@ -234,12 +234,12 @@ sites = sites.sort_values(by="composite_score", ascending=False).reset_index(dro
 sites["final_rank"] = sites.index + 1
 
 # Prepare table for display
-display_df = sites[[
+display_cols = sites[[
     "final_rank", "site_name", "composite_score", "traffic_level", "nearby_chargers", "headroom_mva", "use",
     "opening_hours", "land_accessibility"
 ]].copy()
 
-display_df.rename(columns={
+display_cols.rename(columns={
     "final_rank": "Rank",
     "site_name": "Site Name",
     "composite_score": "Score",
@@ -250,7 +250,7 @@ display_df.rename(columns={
     "opening_hours": "Opening Hours",
     "land_accessibility": "Land Accessibility"
 }, inplace=True)
-]
+
 st.markdown("Ranked Sites")
 st.dataframe(sites[display_cols].style.format({
     "final_rank": "{:.0f}",

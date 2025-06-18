@@ -142,15 +142,15 @@ def create_map(sites, chargers, substations, show_chargers=True, show_substation
     return m
 
 # --- Sidebar Controls ---
-st.sidebar.header("\u2696\ufe0f Weight Configuration")
+with st.sidebar.expander("Weight Configuration (Advanced)", expanded=False):
+    w_hours = st.slider("Opening Hours Weight", 0.0, 1.0, 0.2, 0.05)
+    w_land = st.slider("Land Accessibility Weight", 0.0, 1.0, 0.2, 0.05)
+    w_grid = st.slider("Grid Headroom Weight", 0.0, 1.0, 0.2, 0.05)
+    w_use = st.slider("Use Suitability Weight", 0.0, 1.0, 0.1, 0.05)
+    w_traffic = st.slider("Traffic Flow Weight", 0.0, 1.0, 0.3, 0.05)
 
-w_hours = st.sidebar.slider("Opening Hours Weight", 0.0, 1.0, 0.2, 0.05)
-w_land = st.sidebar.slider("Land Accessibility Weight", 0.0, 1.0, 0.2, 0.05)
-w_grid = st.sidebar.slider("Grid Headroom Weight", 0.0, 1.0, 0.2, 0.05)
-w_use = st.sidebar.slider("Use Suitability Weight", 0.0, 1.0, 0.1, 0.05)
-w_traffic = st.sidebar.slider("Traffic Flow Weight", 0.0, 1.0, 0.3, 0.05)
+    penalty_per_charger = st.slider("Penalty per Nearby Charger", 0.0, 0.2, 0.05, 0.01)
 
-penalty_per_charger = st.sidebar.slider("Penalty per Nearby Charger", 0.0, 0.2, 0.05, 0.01)
 
 # Normalize weights if total > 0
 total = w_hours + w_land + w_grid + w_use + w_traffic

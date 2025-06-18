@@ -141,51 +141,7 @@ def create_map(sites, chargers, substations, show_chargers=True, show_substation
     folium.LayerControl().add_to(m)
     return m
 
-# --- Sidebar Controls ---
-with st.expander("Weight Configuration (Advanced)", expanded=False):
-    w_hours = st.slider("Opening Hours Weight", 0.0, 1.0, 0.2, 0.05)
-    w_land = st.slider("Land Accessibility Weight", 0.0, 1.0, 0.2, 0.05)
-    w_grid = st.slider("Grid Headroom Weight", 0.0, 1.0, 0.2, 0.05)
-    w_use = st.slider("Use Suitability Weight", 0.0, 1.0, 0.1, 0.05)
-    w_traffic = st.slider("Traffic Flow Weight", 0.0, 1.0, 0.3, 0.05)
 
-    total_weight = w_hours + w_land + w_grid + w_use + w_traffic
-    st.markdown(f"**Total Weight: {total_weight:.2f}**")
-
-
-
-    penalty_choice = st.selectbox(
-        "Penalty per Nearby Charger",
-        options=["None", "Low", "Medium", "High"],
-        index=2  # Default to Medium
-    )
-
-with st.expander("Use Suitability Scores", expanded=False):
-    unique_uses = sorted(sites["use"].dropna().str.lower().unique())
-    use_map = {}
-    for use_type in unique_uses:
-        default = 75 if "retail" in use_type else 85 if "office" in use_type else 95 if "residential" in use_type else 60
-        use_map[use_type] = st.slider(f"{use_type.title()}", 0, 100, default, 5)
-    # Map choices to numeric values
-    penalty_map = {
-        "None": 0.0,
-        "Low": 0.01,
-        "Medium": 0.05,
-        "High": 0.1
-    }
-
-    penalty_per_charger = penalty_map[penalty_choice]
-
-
-
-# Normalize weights if total > 0
-total = w_hours + w_land + w_grid + w_use + w_traffic
-if total > 0:
-    w_hours /= total
-    w_land /= total
-    w_grid /= total
-    w_use /= total
-    w_traffic /= total
 
 # --- Upload Section ---
 uploaded_file = st.file_uploader("Upload your ranked sites CSV", type=["csv"])
@@ -214,6 +170,45 @@ sites["composite_score"] = sites["total_score"] - penalty_per_charger * sites["n
 sites.loc[sites["headroom_mva"] <= 0, ["composite_score", "total_score"]] = 0
 sites = sites.sort_values(by="composite_score", ascending=False).reset_index(drop=True)
 sites["final_rank"] = sites.index + 1
+
+# --- Sidebar Controls ---
+with st.expander("Weight Configuration (Advanced)", expanded=False):
+    w_hours = st.slider("Opening Hours Weight", 0.0, 1.0, 0.2, 0.05)
+    w_land = st.slider("Land Accessibility Weight", 0.0, 1.0, 0.2, 0.05)
+    w_grid = st.slider("Grid Headroom Weight", 0.0, 1.0, 0.2, 0.05)
+    w_use = st.slider("Use Suitability Weight", 0.0, 1.0, 0.1, 0.05)
+    w_traffic = st.slider("Traffic Flow Weight", 0.0, 1.0, 0.3, 0.05)
+
+    penalty_choice = st.selectbox(
+        "Penalty per Nearby Charger",
+        options=["None", "Low", "Medium", "High"],
+        index=2  # Default to Medium
+    )
+
+with st.expander("Use Suitability Scores", expanded=False):
+    unique_uses = sorted(sites["use"].dropna().str.lower().unique())
+    use_map = {}
+    for use_type in unique_uses:
+        default = 75 if "retail" in use_type else 85 if "office" in use_type else 95 if "residential" in use_type else 60
+        use_map[use_type] = st.slider(f"{use_type.title()}", 0, 100, default, 5)
+    # Map choices to numeric values
+    penalty_map = {
+        "None": 0.0,
+        "Low": 0.01,
+        "Medium": 0.05,
+        "High": 0.1
+    }
+
+    penalty_per_charger = penalty_map[penalty_choice]
+
+# Normalize weights if total > 0
+total = w_hours + w_land + w_grid + w_use + w_traffic
+if total > 0:
+    w_hours /= total
+    w_land /= total
+    w_grid /= total
+    w_use /= total
+    w_traffic /= total
 
 # --- Table Display ---
 display_df = sites[[

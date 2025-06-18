@@ -179,7 +179,7 @@ with st.expander("Use Class Suitability Configuration", expanded=False):
     cols = st.columns(3)
     for i, use_type in enumerate(unique_uses):
         default = 75 if "retail" in use_type else 85 if "office" in use_type else 95 if "residential" in use_type else 60
-        col = cols[i % 3]
+        col = cols[i % 2]
         use_map[use_type] = col.slider(
             label=f"{use_type.title()} suitability",
             min_value=0, max_value=100, value=default, step=5,
@@ -187,7 +187,6 @@ with st.expander("Use Class Suitability Configuration", expanded=False):
         )
 
 with st.expander("Ranking Weights Configuration", expanded=False):
-    help("test")
     col1, col2 = st.columns(2)
     w_hours = col1.slider("Opening Hours Weight", 0.0, 1.0, 0.2, 0.05,
                           help="Weight given to site's daily opening hours in ranking")

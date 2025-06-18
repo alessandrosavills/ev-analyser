@@ -187,6 +187,7 @@ with st.expander("Use Class Suitability Configuration", expanded=False):
         )
 
 with st.expander("Ranking Weights Configuration", expanded=False):
+    help("test")
     col1, col2 = st.columns(2)
     w_hours = col1.slider("Opening Hours Weight", 0.0, 1.0, 0.2, 0.05,
                           help="Weight given to site's daily opening hours in ranking")
@@ -202,7 +203,7 @@ with st.expander("Ranking Weights Configuration", expanded=False):
 with st.expander("EV Chargers Configuration", expanded=False):
     penalty_choice = st.selectbox(
         "Penalty per Nearby Charger",
-        options=["None ⚪", "Low ⚠️", "Medium 🚧", "High ❌"],
+        options=["None", "Low", "Medium", "High"],
         index=2,
         help="How much to penalize sites with nearby EV chargers to avoid oversaturation"
     )

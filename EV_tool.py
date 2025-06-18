@@ -16,6 +16,7 @@ with col1:
 with col2:
     st.title("EV Charger Site Analyser")
 
+
 # --- Helper Functions ---
 def latlon_to_xyz(lat, lon):
     lat_rad = np.radians(lat)
@@ -26,12 +27,15 @@ def latlon_to_xyz(lat, lon):
     z = R * np.sin(lat_rad)
     return np.vstack((x, y, z)).T
 
+
+@st.cache_data(show_spinner=False)
 def load_data():
     cleaned_dft = pd.read_csv("cleaned_dft.zip", compression='zip')
     chargers = pd.read_csv("chargers.csv")
     headroom = pd.read_csv("headroom.csv")
     cleaned_dft = cleaned_dft.sort_values("year").drop_duplicates(subset=["count_point_id"], keep="last")
     return chargers, cleaned_dft, headroom
+
 
 def process_sites(sites, chargers, cleaned_dft, headroom):
     dft_xyz = latlon_to_xyz(cleaned_dft["latitude"].values, cleaned_dft["longitude"].values)
@@ -68,21 +72,23 @@ def process_sites(sites, chargers, cleaned_dft, headroom):
     sites["headroom_mva"] = headroom.iloc[nearest_sub_indices]["headroom_mva"].values
 
     sites["traffic_norm"] = (sites["traffic_count"] - sites["traffic_count"].min()) / (
-        sites["traffic_count"].max() - sites["traffic_count"].min() + 1e-6)
+            sites["traffic_count"].max() - sites["traffic_count"].min() + 1e-6)
     sites["grid_score"] = (sites["headroom_mva"] - sites["headroom_mva"].min()) / (
-        sites["headroom_mva"].max() - sites["headroom_mva"].min() + 1e-6)
+            sites["headroom_mva"].max() - sites["headroom_mva"].min() + 1e-6)
 
     return sites
+
 
 def calculate_scores(sites, w_hours, w_land, w_grid, w_use, w_traffic):
     sites["total_score"] = (
-        (sites["opening_hours"] / 24) * 100 * w_hours +
-        sites["land_accessibility"] * w_land +
-        sites["grid_score"] * 100 * w_grid +
-        sites["use_score"] * w_use +
-        sites["traffic_norm"] * 100 * w_traffic
+            (sites["opening_hours"] / 24) * 100 * w_hours +
+            sites["land_accessibility"] * w_land +
+            sites["grid_score"] * 100 * w_grid +
+            sites["use_score"] * w_use +
+            sites["traffic_norm"] * 100 * w_traffic
     )
     return sites
+
 
 def create_map(sites, chargers, substations, show_chargers=True, show_substations=True):
     map_center = [sites["latitude"].mean(), sites["longitude"].mean()]
@@ -142,7 +148,6 @@ def create_map(sites, chargers, substations, show_chargers=True, show_substation
     return m
 
 
-
 # --- Upload Section ---
 uploaded_file = st.file_uploader("Upload your ranked sites CSV", type=["csv"])
 sites = None
@@ -160,18 +165,20 @@ else:
     st.warning("Please upload a CSV with columns: site_name, latitude, longitude, use, opening_hours, land_accessibility.")
     st.stop()
 
+# Load all other data
 chargers, cleaned_dft, headroom = load_data()
-sites = process_sites(sites, chargers, cleaned_dft, headroom)
-
-
-sites["use_score"] = sites["use"].str.lower().map(use_map).fillna(1)
-sites = calculate_scores(sites, w_hours, w_land, w_grid, w_use, w_traffic)
-sites["composite_score"] = sites["total_score"] - penalty_per_charger * sites["nearby_chargers"]
-sites.loc[sites["headroom_mva"] <= 0, ["composite_score", "total_score"]] = 0
-sites = sites.sort_values(by="composite_score", ascending=False).reset_index(drop=True)
-sites["final_rank"] = sites.index + 1
 
 # --- Sidebar Controls ---
+
+# We need 'sites' loaded to build use_map sliders dynamically, so place after upload
+
+with st.expander("Use Suitability Scores", expanded=False):
+    unique_uses = sorted(sites["use"].dropna().str.lower().unique())
+    use_map = {}
+    for use_type in unique_uses:
+        default = 75 if "retail" in use_type else 85 if "office" in use_type else 95 if "residential" in use_type else 60
+        use_map[use_type] = st.slider(f"{use_type.title()}", 0, 100, default, 5)
+
 with st.expander("Weight Configuration (Advanced)", expanded=False):
     w_hours = st.slider("Opening Hours Weight", 0.0, 1.0, 0.2, 0.05)
     w_land = st.slider("Land Accessibility Weight", 0.0, 1.0, 0.2, 0.05)
@@ -185,62 +192,67 @@ with st.expander("Weight Configuration (Advanced)", expanded=False):
         index=2  # Default to Medium
     )
 
-with st.expander("Use Suitability Scores", expanded=False):
-    unique_uses = sorted(sites["use"].dropna().str.lower().unique())
-    use_map = {}
-    for use_type in unique_uses:
-        default = 75 if "retail" in use_type else 85 if "office" in use_type else 95 if "residential" in use_type else 60
-        use_map[use_type] = st.slider(f"{use_type.title()}", 0, 100, default, 5)
-    # Map choices to numeric values
-    penalty_map = {
-        "None": 0.0,
-        "Low": 0.01,
-        "Medium": 0.05,
-        "High": 0.1
-    }
+penalty_map = {
+    "None": 0.0,
+    "Low": 0.01,
+    "Medium": 0.05,
+    "High": 0.1
+}
+penalty_per_charger = penalty_map[penalty_choice]
 
-    penalty_per_charger = penalty_map[penalty_choice]
+# Normalize weights to sum 1
+total_weight = w_hours + w_land + w_grid + w_use + w_traffic
+if total_weight > 0:
+    w_hours /= total_weight
+    w_land /= total_weight
+    w_grid /= total_weight
+    w_use /= total_weight
+    w_traffic /= total_weight
+else:
+    # Avoid division by zero
+    w_hours = w_land = w_grid = w_use = w_traffic = 0.2
 
-# Normalize weights if total > 0
-total = w_hours + w_land + w_grid + w_use + w_traffic
-if total > 0:
-    w_hours /= total
-    w_land /= total
-    w_grid /= total
-    w_use /= total
-    w_traffic /= total
+# --- Processing and Calculations ---
 
-# --- Table Display ---
-display_df = sites[[
-    "site_name", "composite_score", "traffic_level", "nearby_chargers", "headroom_mva", "use",
-    "opening_hours", "land_accessibility"
-]].copy()
+# Map 'use' to 'use_score'
+sites["use_score"] = sites["use"].str.lower().map(use_map).fillna(1)
 
-display_df.rename(columns={
-    "site_name": "Site Name",
-    "composite_score": "Score",
-    "traffic_level": "Traffic Level",
-    "nearby_chargers": "Nearby Chargers",
-    "headroom_mva": "Headroom (MVA)",
-    "use": "Site Use",
-    "opening_hours": "Opening Hours",
-    "land_accessibility": "Land Accessibility"
-}, inplace=True)
+# Process sites with traffic, chargers nearby, headroom, etc.
+sites = process_sites(sites, chargers, cleaned_dft, headroom)
 
-display_df["Score"] = display_df["Score"].round(2)
-display_df["Headroom (MVA)"] = display_df["Headroom (MVA)"].round(0).astype(int)
+# Calculate total weighted score
+sites = calculate_scores(sites, w_hours, w_land, w_grid, w_use, w_traffic)
 
-st.header("Ranked Sites Table")
-st.dataframe(display_df)
+# Apply penalty per nearby charger
+sites["composite_score"] = sites["total_score"] - penalty_per_charger * sites["nearby_chargers"]
+
+# Remove sites with no headroom
+sites.loc[sites["headroom_mva"] <= 0, ["composite_score", "total_score"]] = 0
+
+# Sort and rank
+sites = sites.sort_values(by="composite_score", ascending=False).reset_index(drop=True)
+sites["final_rank"] = sites.index + 1
+
+# Prepare table for display
+display_cols = [
+    "final_rank", "site_name", "latitude", "longitude", "use",
+    "opening_hours", "land_accessibility", "traffic_level",
+    "nearby_chargers", "headroom_mva", "composite_score"
+]
+st.markdown("### Ranked Sites Table")
+st.dataframe(sites[display_cols].style.format({
+    "final_rank": "{:.0f}",
+    "opening_hours": "{:.1f}",
+    "land_accessibility": "{:.2f}",
+    "nearby_chargers": "{:.0f}",
+    "headroom_mva": "{:.1f}",
+    "composite_score": "{:.2f}"
+}))
 
 # --- Map Display ---
-st.header("Sites Map with Rankings")
 
-st.write("Additional points to include in the map:")
-st.info("Depending on the location, loading the full map may take a moment.")
-show_chargers = st.checkbox("EV chargers", value=False)
-show_substations = st.checkbox("Substations", value=False)
+show_chargers = st.checkbox("Show EV Chargers", value=True)
+show_substations = st.checkbox("Show Substations", value=True)
 
-m = create_map(sites, chargers, headroom, show_chargers=show_chargers, show_substations=show_substations)
-st.caption("Map showing site rankings: green = best, red = worst")
-st_folium(m, width=800, height=600, returned_objects=[])
+ev_map = create_map(sites, chargers, headroom, show_chargers=show_chargers, show_substations=show_substations)
+st_folium(ev_map, width=1000, height=700)

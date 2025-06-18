@@ -181,7 +181,7 @@ if total > 0:
     w_use /= total
     w_traffic /= total
 
-st.sidebar.markdown("### \ud83c\udfe2 Use Suitability Scores")
+st.sidebar.markdown("### Use Suitability Scores")
 unique_uses = sorted(sites["use"].dropna().str.lower().unique())
 use_map = {}
 for use_type in unique_uses:

@@ -152,9 +152,22 @@ with st.expander("Weight Configuration (Advanced)", expanded=False):
     total_weight = w_hours + w_land + w_grid + w_use + w_traffic
     st.markdown(f"**Total Weight: {total_weight:.2f}**")
 
+    penalty_choice = st.selectbox(
+        "Penalty per Nearby Charger",
+        options=["None", "Low", "Medium", "High"],
+        index=2  # Default to Medium
+    )
 
+    # Map choices to numeric values
+    penalty_map = {
+        "None": 0.0,
+        "Low": 0.01,
+        "Medium": 0.05,
+        "High": 0.1
+    }
 
-    penalty_per_charger = st.slider("Penalty per Nearby Charger", 0.0, 0.2, 0.05, 0.01)
+    penalty_per_charger = penalty_map[penalty_choice]
+
 
 
 # Normalize weights if total > 0

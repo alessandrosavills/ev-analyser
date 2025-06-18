@@ -141,6 +141,26 @@ def create_map(sites, chargers, substations, show_chargers=True, show_substation
     folium.LayerControl().add_to(m)
     return m
 
+# --- Sidebar Controls ---
+st.sidebar.header("\u2696\ufe0f Weight Configuration")
+
+w_hours = st.sidebar.slider("Opening Hours Weight", 0.0, 1.0, 0.2, 0.05)
+w_land = st.sidebar.slider("Land Accessibility Weight", 0.0, 1.0, 0.2, 0.05)
+w_grid = st.sidebar.slider("Grid Headroom Weight", 0.0, 1.0, 0.2, 0.05)
+w_use = st.sidebar.slider("Use Suitability Weight", 0.0, 1.0, 0.1, 0.05)
+w_traffic = st.sidebar.slider("Traffic Flow Weight", 0.0, 1.0, 0.3, 0.05)
+
+penalty_per_charger = st.sidebar.slider("Penalty per Nearby Charger", 0.0, 0.2, 0.05, 0.01)
+
+# Normalize weights if total > 0
+total = w_hours + w_land + w_grid + w_use + w_traffic
+if total > 0:
+    w_hours /= total
+    w_land /= total
+    w_grid /= total
+    w_use /= total
+    w_traffic /= total
+
 # --- Upload Section ---
 uploaded_file = st.file_uploader("Upload your ranked sites CSV", type=["csv"])
 sites = None
@@ -161,25 +181,7 @@ else:
 chargers, cleaned_dft, headroom = load_data()
 sites = process_sites(sites, chargers, cleaned_dft, headroom)
 
-# --- Sidebar Controls ---
-st.sidebar.header("\u2696\ufe0f Weight Configuration")
 
-w_hours = st.sidebar.slider("Opening Hours Weight", 0.0, 1.0, 0.2, 0.05)
-w_land = st.sidebar.slider("Land Accessibility Weight", 0.0, 1.0, 0.2, 0.05)
-w_grid = st.sidebar.slider("Grid Headroom Weight", 0.0, 1.0, 0.2, 0.05)
-w_use = st.sidebar.slider("Use Suitability Weight", 0.0, 1.0, 0.1, 0.05)
-w_traffic = st.sidebar.slider("Traffic Flow Weight", 0.0, 1.0, 0.3, 0.05)
-
-penalty_per_charger = st.sidebar.slider("Penalty per Nearby Charger", 0.0, 0.2, 0.05, 0.01)
-
-# Normalize weights if total > 0
-total = w_hours + w_land + w_grid + w_use + w_traffic
-if total > 0:
-    w_hours /= total
-    w_land /= total
-    w_grid /= total
-    w_use /= total
-    w_traffic /= total
 
 st.sidebar.markdown("### Use Suitability Scores")
 unique_uses = sorted(sites["use"].dropna().str.lower().unique())

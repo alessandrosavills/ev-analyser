@@ -34,15 +34,12 @@ def load_data():
     return chargers, cleaned_dft, headroom
 
 def process_sites(sites, chargers, cleaned_dft, headroom):
-    # Prepare DfT traffic points
     dft_xyz = latlon_to_xyz(cleaned_dft["latitude"].values, cleaned_dft["longitude"].values)
     sites_xyz = latlon_to_xyz(sites["latitude"].values, sites["longitude"].values)
 
-    # --- Weighted Traffic Analysis (improved) ---
-    distances = distance_matrix(sites_xyz, dft_xyz)  # shape: (n_sites, n_dft)
-    weights = 1 / (distances + 0.1)  # Avoid division by zero
+    distances = distance_matrix(sites_xyz, dft_xyz)
+    weights = 1 / (distances + 0.1)
 
-    # Optional: boost traffic weights by road category
     category_weight = {
         "Motorway": 1.5,
         "A Road": 1.2,
@@ -53,46 +50,23 @@ def process_sites(sites, chargers, cleaned_dft, headroom):
     weighted_traffic = weights @ (cleaned_dft["cars_and_taxis"].values * cleaned_dft["category_boost"].values)
     sites["traffic_count"] = weighted_traffic
 
-    # Categorise traffic level based on relative distribution among the uploaded sites
     labels = ["Very Low", "Low", "Medium", "High", "Very High"]
-
     try:
-        sites["traffic_level"] = pd.qcut(
-            sites["traffic_count"],
-            q=5,
-            labels=labels
-        )
+        sites["traffic_level"] = pd.qcut(sites["traffic_count"], q=5, labels=labels)
     except ValueError:
-        # In case there are not enough unique values for 5 bins
-        sites["traffic_level"] = pd.cut(
-            sites["traffic_count"],
-            bins=5,
-            labels=labels
-        )
+        sites["traffic_level"] = pd.cut(sites["traffic_count"], bins=5, labels=labels)
 
-    # --- Nearby EV chargers ---
     chargers = chargers.dropna(subset=["latitude", "longitude"])
     chargers_xyz = latlon_to_xyz(chargers["latitude"].values, chargers["longitude"].values)
     chargers_tree = cKDTree(chargers_xyz)
     nearby_indices = chargers_tree.query_ball_point(sites_xyz, r=1.0)
     sites["nearby_chargers"] = [len(idx_list) for idx_list in nearby_indices]
 
-    # --- Use score ---
-    use_map = {
-        "residential": 95,
-        "public": 60,
-        "retail": 75,
-        "office": 85
-    }
-    sites["use_score"] = sites["use"].str.lower().map(use_map).fillna(1)
-
-    # --- Grid headroom ---
     sub_xyz = latlon_to_xyz(headroom["latitude"].values, headroom["longitude"].values)
     sub_tree = cKDTree(sub_xyz)
     _, nearest_sub_indices = sub_tree.query(sites_xyz, k=1)
     sites["headroom_mva"] = headroom.iloc[nearest_sub_indices]["headroom_mva"].values
 
-    # --- Normalisation ---
     sites["traffic_norm"] = (sites["traffic_count"] - sites["traffic_count"].min()) / (
         sites["traffic_count"].max() - sites["traffic_count"].min() + 1e-6)
     sites["grid_score"] = (sites["headroom_mva"] - sites["headroom_mva"].min()) / (
@@ -100,13 +74,7 @@ def process_sites(sites, chargers, cleaned_dft, headroom):
 
     return sites
 
-def calculate_scores(sites):
-    w_hours = 0.2
-    w_land = 0.2
-    w_grid = 0.2
-    w_use = 0.1
-    w_traffic = 0.3
-
+def calculate_scores(sites, w_hours, w_land, w_grid, w_use, w_traffic):
     sites["total_score"] = (
         (sites["opening_hours"] / 24) * 100 * w_hours +
         sites["land_accessibility"] * w_land +
@@ -114,13 +82,6 @@ def calculate_scores(sites):
         sites["use_score"] * w_use +
         sites["traffic_norm"] * 100 * w_traffic
     )
-
-    penalty_per_charger = 0.05
-    sites["composite_score"] = sites["total_score"] - penalty_per_charger * sites["nearby_chargers"]
-    sites.loc[sites["headroom_mva"] <= 0, ["composite_score", "total_score"]] = 0
-
-    sites = sites.sort_values(by="composite_score", ascending=False).reset_index(drop=True)
-    sites["final_rank"] = sites.index + 1
     return sites
 
 def create_map(sites, chargers, substations, show_chargers=True, show_substations=True):
@@ -191,17 +152,48 @@ if uploaded_file is not None:
         "opening_hours", "land_accessibility"
     }
     if not required_cols.issubset(sites.columns):
-        st.error(f"❌ Uploaded CSV is missing required columns: {required_cols - set(sites.columns)}")
+        st.error(f"\u274c Uploaded CSV is missing required columns: {required_cols - set(sites.columns)}")
         st.stop()
-
-
 else:
     st.warning("Please upload a CSV with columns: site_name, latitude, longitude, use, opening_hours, land_accessibility.")
     st.stop()
 
 chargers, cleaned_dft, headroom = load_data()
 sites = process_sites(sites, chargers, cleaned_dft, headroom)
-sites = calculate_scores(sites)
+
+# --- Sidebar Controls ---
+st.sidebar.header("\u2696\ufe0f Weight Configuration")
+
+w_hours = st.sidebar.slider("Opening Hours Weight", 0.0, 1.0, 0.2, 0.05)
+w_land = st.sidebar.slider("Land Accessibility Weight", 0.0, 1.0, 0.2, 0.05)
+w_grid = st.sidebar.slider("Grid Headroom Weight", 0.0, 1.0, 0.2, 0.05)
+w_use = st.sidebar.slider("Use Suitability Weight", 0.0, 1.0, 0.1, 0.05)
+w_traffic = st.sidebar.slider("Traffic Flow Weight", 0.0, 1.0, 0.3, 0.05)
+
+penalty_per_charger = st.sidebar.slider("Penalty per Nearby Charger", 0.0, 0.2, 0.05, 0.01)
+
+# Normalize weights if total > 0
+total = w_hours + w_land + w_grid + w_use + w_traffic
+if total > 0:
+    w_hours /= total
+    w_land /= total
+    w_grid /= total
+    w_use /= total
+    w_traffic /= total
+
+st.sidebar.markdown("### \ud83c\udfe2 Use Suitability Scores")
+unique_uses = sorted(sites["use"].dropna().str.lower().unique())
+use_map = {}
+for use_type in unique_uses:
+    default = 75 if "retail" in use_type else 85 if "office" in use_type else 95 if "residential" in use_type else 60
+    use_map[use_type] = st.sidebar.slider(f"{use_type.title()}", 0, 100, default, 5)
+
+sites["use_score"] = sites["use"].str.lower().map(use_map).fillna(1)
+sites = calculate_scores(sites, w_hours, w_land, w_grid, w_use, w_traffic)
+sites["composite_score"] = sites["total_score"] - penalty_per_charger * sites["nearby_chargers"]
+sites.loc[sites["headroom_mva"] <= 0, ["composite_score", "total_score"]] = 0
+sites = sites.sort_values(by="composite_score", ascending=False).reset_index(drop=True)
+sites["final_rank"] = sites.index + 1
 
 # --- Table Display ---
 display_df = sites[[
@@ -223,11 +215,11 @@ display_df.rename(columns={
 display_df["Score"] = display_df["Score"].round(2)
 display_df["Headroom (MVA)"] = display_df["Headroom (MVA)"].round(0).astype(int)
 
-st.header("📊 Ranked Sites Table")
+st.header("\ud83d\udcca Ranked Sites Table")
 st.dataframe(display_df)
 
 # --- Map Display ---
-st.header("🗺️ Sites Map with Rankings")
+st.header("\ud83d\udfef\ufe0f Sites Map with Rankings")
 
 st.write("Additional points to include in the map:")
 st.info("Depending on the location, loading the full map may take a moment.")

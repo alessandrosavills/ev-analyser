@@ -172,24 +172,40 @@ chargers, cleaned_dft, headroom = load_data()
 
 # We need 'sites' loaded to build use_map sliders dynamically, so place after upload
 
-with st.expander("Use Suitability Scores", expanded=False):
+with st.expander("Use Class Suitability Configuration", expanded=False):
     unique_uses = sorted(sites["use"].dropna().str.lower().unique())
     use_map = {}
-    for use_type in unique_uses:
+
+    cols = st.columns(3)
+    for i, use_type in enumerate(unique_uses):
         default = 75 if "retail" in use_type else 85 if "office" in use_type else 95 if "residential" in use_type else 60
-        use_map[use_type] = st.slider(f"{use_type.title()}", 0, 100, default, 5)
+        col = cols[i % 3]
+        use_map[use_type] = col.slider(
+            label=f"{use_type.title()} suitability",
+            min_value=0, max_value=100, value=default, step=5,
+            help=f"Set suitability score for {use_type.title()} sites (0 = least suitable, 100 = most suitable)"
+        )
 
-with st.expander("Weight Configuration (Advanced)", expanded=False):
-    w_hours = st.slider("Opening Hours Weight", 0.0, 1.0, 0.2, 0.05)
-    w_land = st.slider("Land Accessibility Weight", 0.0, 1.0, 0.2, 0.05)
-    w_grid = st.slider("Grid Headroom Weight", 0.0, 1.0, 0.2, 0.05)
-    w_use = st.slider("Use Suitability Weight", 0.0, 1.0, 0.1, 0.05)
-    w_traffic = st.slider("Traffic Flow Weight", 0.0, 1.0, 0.3, 0.05)
+with st.expander("Ranking Weights Configuration", expanded=False):
+    col1, col2 = st.columns(2)
+    w_hours = col1.slider("Opening Hours Weight", 0.0, 1.0, 0.2, 0.05,
+                          help="Weight given to site's daily opening hours in ranking")
+    w_land = col2.slider("Land Accessibility Weight", 0.0, 1.0, 0.2, 0.05,
+                         help="Weight given to how easy the land is to access")
+    w_grid = col1.slider("Grid Headroom Weight", 0.0, 1.0, 0.2, 0.05,
+                         help="Weight given to electrical grid capacity near the site")
+    w_use = col2.slider("Use Suitability Weight", 0.0, 1.0, 0.1, 0.05,
+                        help="Weight given to the suitability score of the site’s use")
+    w_traffic = col1.slider("Traffic Flow Weight", 0.0, 1.0, 0.3, 0.05,
+                            help="Weight given to local traffic volume around the site")
 
+with st.expander("EV Chargers Configuration", expanded=False):
     penalty_choice = st.selectbox(
         "Penalty per Nearby Charger",
-        options=["None", "Low", "Medium", "High"],
-        index=2  # Default to Medium
+        options=["None ⚪", "Low ⚠️", "Medium 🚧", "High ❌"],
+        index=2,
+        help="How much to penalize sites with nearby EV chargers to avoid oversaturation"
+    )
     )
 
 penalty_map = {

@@ -6,6 +6,9 @@ from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 import numpy as np
 from scipy.spatial import cKDTree, distance_matrix
+import matplotlib.pyplot as plt
+import plotly.express as px
+from io import BytesIO
 
 st.set_page_config(layout="centered")
 
@@ -34,15 +37,12 @@ def load_data():
     return chargers, cleaned_dft, headroom
 
 def process_sites(sites, chargers, cleaned_dft, headroom):
-    # Prepare DfT traffic points
     dft_xyz = latlon_to_xyz(cleaned_dft["latitude"].values, cleaned_dft["longitude"].values)
     sites_xyz = latlon_to_xyz(sites["latitude"].values, sites["longitude"].values)
 
-    # --- Weighted Traffic Analysis (improved) ---
-    distances = distance_matrix(sites_xyz, dft_xyz)  # shape: (n_sites, n_dft)
-    weights = 1 / (distances + 0.1)  # Avoid division by zero
+    distances = distance_matrix(sites_xyz, dft_xyz)
+    weights = 1 / (distances + 0.1)
 
-    # Optional: boost traffic weights by road category
     category_weight = {
         "Motorway": 1.5,
         "A Road": 1.2,
@@ -53,50 +53,28 @@ def process_sites(sites, chargers, cleaned_dft, headroom):
     weighted_traffic = weights @ (cleaned_dft["cars_and_taxis"].values * cleaned_dft["category_boost"].values)
     sites["traffic_count"] = weighted_traffic
 
-    # Categorise traffic level based on relative distribution among the uploaded sites
     labels = ["Very Low", "Low", "Medium", "High", "Very High"]
-
     try:
-        sites["traffic_level"] = pd.qcut(
-            sites["traffic_count"],
-            q=5,
-            labels=labels
-        )
+        sites["traffic_level"] = pd.qcut(sites["traffic_count"], q=5, labels=labels)
     except ValueError:
-        # In case there are not enough unique values for 5 bins
-        sites["traffic_level"] = pd.cut(
-            sites["traffic_count"],
-            bins=5,
-            labels=labels
-        )
+        sites["traffic_level"] = pd.cut(sites["traffic_count"], bins=5, labels=labels)
 
-    # --- Nearby EV chargers ---
     chargers = chargers.dropna(subset=["latitude", "longitude"])
     chargers_xyz = latlon_to_xyz(chargers["latitude"].values, chargers["longitude"].values)
     chargers_tree = cKDTree(chargers_xyz)
     nearby_indices = chargers_tree.query_ball_point(sites_xyz, r=1.0)
     sites["nearby_chargers"] = [len(idx_list) for idx_list in nearby_indices]
 
-    # --- Use score ---
-    use_map = {
-        "residential": 95,
-        "public": 60,
-        "retail": 75,
-        "office": 85
-    }
+    use_map = {"residential": 95, "public": 60, "retail": 75, "office": 85}
     sites["use_score"] = sites["use"].str.lower().map(use_map).fillna(1)
 
-    # --- Grid headroom ---
     sub_xyz = latlon_to_xyz(headroom["latitude"].values, headroom["longitude"].values)
     sub_tree = cKDTree(sub_xyz)
     _, nearest_sub_indices = sub_tree.query(sites_xyz, k=1)
     sites["headroom_mva"] = headroom.iloc[nearest_sub_indices]["headroom_mva"].values
 
-    # --- Normalisation ---
-    sites["traffic_norm"] = (sites["traffic_count"] - sites["traffic_count"].min()) / (
-        sites["traffic_count"].max() - sites["traffic_count"].min() + 1e-6)
-    sites["grid_score"] = (sites["headroom_mva"] - sites["headroom_mva"].min()) / (
-        sites["headroom_mva"].max() - sites["headroom_mva"].min() + 1e-6)
+    sites["traffic_norm"] = (sites["traffic_count"] - sites["traffic_count"].min()) / (sites["traffic_count"].max() - sites["traffic_count"].min() + 1e-6)
+    sites["grid_score"] = (sites["headroom_mva"] - sites["headroom_mva"].min()) / (sites["headroom_mva"].max() - sites["headroom_mva"].min() + 1e-6)
 
     return sites
 
@@ -127,9 +105,9 @@ def create_map(sites, chargers, substations, show_chargers=True, show_substation
     map_center = [sites["latitude"].mean(), sites["longitude"].mean()]
     m = folium.Map(location=map_center, zoom_start=11, tiles="CartoDB positron")
 
-    colormap = LinearColormap(colors=["green", "yellow", "red"],
-                              vmin=sites["final_rank"].min(),
-                              vmax=sites["final_rank"].max())
+    colormap = LinearColormap(colors=["green", "yellow", "red"], vmin=sites["final_rank"].min(), vmax=sites["final_rank"].max())
+    colormap.caption = 'Site Ranking (green = best)'
+    colormap.add_to(m)
 
     for _, row in sites.iterrows():
         popup = folium.Popup(f"""
@@ -177,6 +155,16 @@ def create_map(sites, chargers, substations, show_chargers=True, show_substation
                 popup=folium.Popup(popup_html, max_width=200)
             ).add_to(substation_cluster)
 
+    underserved = sites[(sites["nearby_chargers"] <= 1) & (sites["traffic_level"].isin(["High", "Very High"]))]
+    for _, row in underserved.iterrows():
+        folium.Circle(
+            location=[row["latitude"], row["longitude"]],
+            radius=500,
+            color="orange",
+            fill=True,
+            fill_opacity=0.3
+        ).add_to(m)
+
     folium.LayerControl().add_to(m)
     return m
 
@@ -186,14 +174,10 @@ sites = None
 
 if uploaded_file is not None:
     sites = pd.read_csv(uploaded_file)
-    required_cols = {
-        "site_name", "latitude", "longitude", "use",
-        "opening_hours", "land_accessibility"
-    }
+    required_cols = {"site_name", "latitude", "longitude", "use", "opening_hours", "land_accessibility"}
     if not required_cols.issubset(sites.columns):
-        st.error(f"❌ Uploaded CSV is missing required columns: {required_cols - set(sites.columns)}")
+        st.error(f"\u274C Uploaded CSV is missing required columns: {required_cols - set(sites.columns)}")
         st.stop()
-
     st.write("Preview of your uploaded sites:")
     st.dataframe(sites.head())
 else:
@@ -224,18 +208,37 @@ display_df.rename(columns={
 display_df["Score"] = display_df["Score"].round(2)
 display_df["Headroom (MVA)"] = display_df["Headroom (MVA)"].round(0).astype(int)
 
-st.header("📊 Ranked Sites Table")
+st.header("\ud83d\udcca Ranked Sites Table")
 st.dataframe(display_df)
 
-# --- Map Display ---
-st.header("🗺️ Sites Map with Rankings")
+csv_download = display_df.to_csv(index=False).encode('utf-8')
+st.download_button("\u2b07\ufe0f Download Results as CSV", csv_download, "ranked_sites.csv", "text/csv")
 
+# --- Radar/Spider Chart ---
+st.header("\ud83d\udd0d Score Breakdown for Selected Site")
+site_options = sites["site_name"].tolist()
+selected_site = st.selectbox("Select a site to view breakdown:", site_options)
+
+if selected_site:
+    row = sites[sites["site_name"] == selected_site].iloc[0]
+    labels = ["Traffic", "Grid", "Land", "Use", "Hours"]
+    values = [
+        row["traffic_norm"] * 100,
+        row["grid_score"] * 100,
+        row["land_accessibility"],
+        row["use_score"],
+        (row["opening_hours"] / 24) * 100
+    ]
+    fig = px.line_polar(r=values, theta=labels, line_close=True)
+    fig.update_traces(fill='toself')
+    fig.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 100])))
+    st.plotly_chart(fig)
+
+# --- Map Display ---
+st.header("\ud83d\uddfa\ufe0f Sites Map with Rankings")
 st.write("Additional points to include in the map:")
-st.info("Depending on the location, loading the full map may take a moment.")
 show_chargers = st.checkbox("EV chargers", value=False)
 show_substations = st.checkbox("Substations", value=False)
-
 m = create_map(sites, chargers, headroom, show_chargers=show_chargers, show_substations=show_substations)
 st.caption("Map showing site rankings: green = best, red = worst")
 st_folium(m, width=800, height=600, returned_objects=[])
-

@@ -194,8 +194,7 @@ if uploaded_file is not None:
         st.error(f"❌ Uploaded CSV is missing required columns: {required_cols - set(sites.columns)}")
         st.stop()
 
-    st.write("Preview of your uploaded sites:")
-    st.dataframe(sites.head())
+
 else:
     st.warning("Please upload a CSV with columns: site_name, latitude, longitude, use, opening_hours, land_accessibility.")
     st.stop()

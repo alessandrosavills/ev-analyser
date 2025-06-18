@@ -242,3 +242,4 @@ show_substations = st.checkbox("Substations", value=False)
 m = create_map(sites, chargers, headroom, show_chargers=show_chargers, show_substations=show_substations)
 st.caption("Map showing site rankings: green = best, red = worst")
 st_folium(m, width=800, height=600, returned_objects=[])
+

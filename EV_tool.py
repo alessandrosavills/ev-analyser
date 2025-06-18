@@ -206,7 +206,6 @@ with st.expander("EV Chargers Configuration", expanded=False):
         index=2,
         help="How much to penalize sites with nearby EV chargers to avoid oversaturation"
     )
-    )
 
 penalty_map = {
     "None": 0.0,

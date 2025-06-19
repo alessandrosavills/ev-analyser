@@ -91,8 +91,13 @@ def calculate_scores(sites, w_hours, w_land, w_grid, w_use, w_traffic):
 
 
 def create_map(sites, chargers, substations, show_chargers=True, show_substations=True):
-    map_center = [sites["latitude"].mean(), sites["longitude"].mean()]
-    m = folium.Map(location=map_center, zoom_start=11, tiles="CartoDB positron")
+    # Initialize map with a dummy center (will be overridden by fit_bounds)
+    m = folium.Map(location=[0, 0], zoom_start=2, tiles="CartoDB positron")
+
+    # Calculate map bounds
+    min_lat, max_lat = sites["latitude"].min(), sites["latitude"].max()
+    min_lon, max_lon = sites["longitude"].min(), sites["longitude"].max()
+    m.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]])
 
     colormap = LinearColormap(colors=["green", "yellow", "red"],
                               vmin=sites["final_rank"].min(),
@@ -205,7 +210,7 @@ with st.expander("EV Chargers Configuration", expanded=False):
         "Penalty per Nearby Charger",
         options=["None", "Low", "Medium", "High"],
         index=2,
-        help="How much to penalize sites with nearby EV chargers to avoid oversaturation"
+        help="How much to penalise sites with nearby EV chargers to avoid oversaturation"
     )
 
 penalty_map = {

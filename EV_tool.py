@@ -131,7 +131,7 @@ def create_map(sites, chargers, substations, show_chargers=True, show_substation
             folium.Marker(
                 location=[c["latitude"], c["longitude"]],
                 icon=folium.Icon(color="blue", icon="charging-station", prefix='fa'),
-                popup=folium.Popup(f"Charger: {c.get('name', 'N/A')}", max_width=200)
+                popup=folium.Popup(f"Charger: {c.get('title', 'N/A')}", max_width=200)
             ).add_to(charger_cluster)
 
     if show_substations:
@@ -140,7 +140,7 @@ def create_map(sites, chargers, substations, show_chargers=True, show_substation
             headroom_val = s["headroom_mva"] if "headroom_mva" in s and pd.notna(s["headroom_mva"]) else 0
             popup_html = f"""
                 <b>Substation</b><br>
-                Name: {s.get('name', 'N/A')}<br>
+                Name: {s.get('substation_name', 'N/A')}<br>
                 Headroom (MVA): {int(round(headroom_val))}
             """
             folium.Marker(

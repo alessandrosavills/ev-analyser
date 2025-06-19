@@ -295,7 +295,7 @@ test = folium.Map(
     zoom_start=13,
     tiles="CartoDB positron"
 )
-folium.Marker([51.5, -0.1], popup="Tremona Road").add_to(m)
+folium.Marker([51.5, -0.1], popup="Tremona Road").add_to(test)
 
 # Avoid rerun issues by storing results
 map_data = st_folium(test, width=700, height=500)

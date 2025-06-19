@@ -287,3 +287,18 @@ show_substations = st.checkbox("Substations", value=False)
 ev_map = create_map(sites, chargers, headroom, show_chargers=show_chargers, show_substations=show_substations)
 st.caption("Map showing site rankings: green = best, red = worst")
 st_folium(ev_map, width=1000, height=700)
+
+st.title("Map Example with Smooth Zoom")
+
+test = folium.Map(
+    location=[51.5, -0.1],
+    zoom_start=13,
+    tiles="CartoDB positron"
+)
+folium.Marker([51.5, -0.1], popup="Tremona Road").add_to(m)
+
+# Avoid rerun issues by storing results
+map_data = st_folium(test, width=700, height=500)
+
+if map_data["last_object_clicked_popup"]:
+    st.write("You clicked:", map_data["last_object_clicked_popup"])

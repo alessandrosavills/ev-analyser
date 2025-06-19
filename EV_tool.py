@@ -288,6 +288,4 @@ ev_map = create_map(sites, chargers, headroom, show_chargers=show_chargers, show
 st.caption("Map showing site rankings: green = best, red = worst")
 st_folium(ev_map, width=1000, height=700)
 
-st.title("Map Example with Smooth Zoom")
-
 

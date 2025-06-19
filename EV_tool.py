@@ -290,15 +290,4 @@ st_folium(ev_map, width=1000, height=700)
 
 st.title("Map Example with Smooth Zoom")
 
-test = folium.Map(
-    location=[51.5, -0.1],
-    zoom_start=13,
-    tiles="CartoDB positron"
-)
-folium.Marker([51.5, -0.1], popup="Tremona Road").add_to(test)
 
-# Avoid rerun issues by storing results
-map_data = st_folium(test, width=700, height=500)
-
-if map_data["last_object_clicked_popup"]:
-    st.write("You clicked:", map_data["last_object_clicked_popup"])

@@ -280,7 +280,7 @@ st.dataframe(display_df)
 
 # --- Map Display ---
 st.write("Additional points to include in the map:")
-st.info("Depending on the location, loading the additional points may take a moment.")
+st.info("Depending on the location, loading the additional points may take a few minutes.")
 show_chargers = st.checkbox("EV chargers", value=False)
 show_substations = st.checkbox("Substations", value=False)
 
